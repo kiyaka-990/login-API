@@ -1,6 +1,6 @@
 use axum::{
     http::{header, Method},
-    routing::post,
+    routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -12,12 +12,16 @@ use tower_http::cors::{Any, CorsLayer};
 async fn main() {
     // 1. Setup CORS (Crucial for React -> Railway connection)
     let cors = CorsLayer::new()
-        .allow_origin(Any) // Allows your frontend to talk to this API
+        .allow_origin(Any)
         .allow_methods([Method::POST, Method::GET, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE]);
 
-    // 2. Build our application with a route and the CORS layer
+    // 2. Build our application with routes
     let app = Router::new()
+        .route(
+            "/",
+            get(|| async { "API is Online! Use /api/login for requests." }),
+        ) // Helps you verify the 404 is gone
         .route("/api/login", post(login_handler))
         .layer(cors);
 
@@ -33,25 +37,20 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-// Simple handler for the login route
 async fn login_handler(Json(payload): Json<LoginRequest>) -> Json<LoginResponse> {
-    println!("Login attempt for: {}", payload.username);
-
-    // Replace this logic with your actual database check
     if payload.username == "admin" {
         Json(LoginResponse {
             success: true,
-            message: "Welcome back!".to_string(),
+            message: "Welcome!".to_string(),
         })
     } else {
         Json(LoginResponse {
             success: false,
-            message: "Invalid credentials".to_string(),
+            message: "Invalid user".to_string(),
         })
     }
 }
 
-// Data structures for JSON
 #[derive(Deserialize)]
 struct LoginRequest {
     username: String,
